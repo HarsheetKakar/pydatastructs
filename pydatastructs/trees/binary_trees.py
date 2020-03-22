@@ -47,7 +47,7 @@ class BinaryTree(object):
                  'is_order_statistic', 'Node']
 
     def __new__(cls, key=None, root_data=None, comp=None,
-                is_order_statistic=False, Node=RedBlackTreeNode):
+                is_order_statistic=False, Node=TreeNode):
         obj = object.__new__(cls)
         if key is None and root_data is not None:
             raise ValueError('Key required.')
@@ -146,7 +146,6 @@ class BinaryTree(object):
             In all other cases.
         """
         raise NotImplementedError("This is an abstract method.")
-
 
     def __str__(self):
         to_be_printed = ['' for i in range(self.tree._last_pos_filled + 1)]
@@ -567,6 +566,9 @@ class SelfBalancingBinaryTree(BinarySearchTree):
             self.tree[self.tree[k].parent].left = k
         self.tree[j].parent = k
         self.tree[k].right = j
+        kp = self.tree[k].parent
+        if kp is None:
+            self.root_idx = k
 
     def _left_right_rotate(self, j, k):
         i = self.tree[k].right
@@ -618,6 +620,9 @@ class SelfBalancingBinaryTree(BinarySearchTree):
             self.tree[self.tree[k].parent].right = k
         self.tree[j].parent = k
         self.tree[k].left = j
+        kp = self.tree[k].parent
+        if kp is None:
+            self.root_idx = k
 
 class AVLTree(SelfBalancingBinaryTree):
     """
@@ -646,9 +651,6 @@ class AVLTree(SelfBalancingBinaryTree):
         super(AVLTree, self)._right_rotate(j, k)
         self.tree[j].height = max(self.left_height(self.tree[j]),
                                   self.right_height(self.tree[j])) + 1
-        kp = self.tree[k].parent
-        if kp is None:
-            self.root_idx = k
         if self.is_order_statistic:
             self.tree[j].size = (self.left_size(self.tree[j]) +
                                  self.right_size(self.tree[j]) + 1)
@@ -683,9 +685,6 @@ class AVLTree(SelfBalancingBinaryTree):
                                   self.right_height(self.tree[j])) + 1
         self.tree[k].height = max(self.left_height(self.tree[k]),
                                     self.right_height(self.tree[k])) + 1
-        kp = self.tree[k].parent
-        if kp is None:
-            self.root_idx = k
         if self.is_order_statistic:
             self.tree[j].size = (self.left_size(self.tree[j]) +
                                  self.right_size(self.tree[j]) + 1)
@@ -1054,3 +1053,103 @@ class BinaryIndexedTree(object):
                    self.get_prefix_sum(left_index - 1)
         else:
             return self.get_prefix_sum(right_index)
+
+class RedBlackTree(SelfBalancingBinaryTree):
+    def __new__(cls, key=None, root_data=None):
+        obj = SelfBalancingBinaryTree.__new__(cls, key, root_data, Node=RedBlackTreeNode)
+        obj.tree[obj.root_idx].color = 0 #root is black
+        return obj
+
+    def insert(self, key, data):
+        super(RedBlackTree, self).insert(key, data)
+        new_node = self.size - 1
+        self.tree[new_node].color = 1
+        self._repair_insert(new_node)
+
+    def _repair_insert(self, k):
+        while self._color(self._parent(k)) == 1:
+            p = self._parent(k)
+            g = self._grandparent(k)
+            if p == self._right(g):
+                u = self._uncle(k) # uncle
+                if self._color(u) == 1:
+                    # case 3.1
+                    self._set_color(u,0)
+                    self._set_color(p, 0)
+                    self._set_color(g, 1)
+                    k = g
+                else:
+                    if k == self._left(p):
+                        # case 3.2.2
+                        x = k
+                        k = p
+                        self._right_rotate(k, self._left(k))
+                    # case 3.2.1
+                    self._set_color(p, 0)
+                    self._set_color(g, 1)
+                    self._left_rotate(g, self._right(g))
+            else:
+                u = self._uncle(k) # uncle
+
+                if self._color(u) == 1:
+                    # mirror case 3.1
+                    self._set_color(u, 0)
+                    self._set_color(p, 0)
+                    self._set_color(g, 1)
+                    k = g
+                else:
+                    if k == self._right(p):
+                        # mirror case 3.2.2
+                        x = k
+                        k = p
+                        self._left_rotate(k, self._right(k))
+                    # mirror case 3.2.1
+                    self._set_color(p, 0)
+                    self._set_color(g, 1)
+                    self._right_rotate(g, self._left(g))
+            if k == self.root_idx:
+                break
+        self._set_color(self.root_idx, 0)
+
+    def _parent(self, node):
+        return self.tree[node].parent
+
+    def _grandparent(self,node):
+        parent = self._parent(node)
+        return self._parent(parent)
+
+    def _uncle(self, node):
+        return self._sibling(self._parent(node))
+
+    def _sibling(self, node):
+        if self._parent(node) is None:
+            return None
+        elif self._left(self._parent(node)) is node:
+            return self._right(self._parent(node))
+        else:
+            return self._left(self._parent(node))
+
+    def _color(self, node):
+        if(node is None):
+            return 0
+
+        else:
+            return self.tree[node].color
+
+    def _set_color(self, node, color):
+        self.tree[node].color = color
+
+    def _right(self, node):
+        return self.tree[node].right
+
+    def _left(self, node):
+        return self.tree[node].left
+
+if __name__ == "__main__":
+    b = AVLTree(2,2)
+    b.insert(1,1)
+    b.insert(0,0)
+    print(b.root_idx)
+    print(b)
+    trav = BinaryTreeTraversal(b).depth_first_search()
+    print(trav)

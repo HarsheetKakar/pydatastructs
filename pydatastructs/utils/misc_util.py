@@ -55,7 +55,7 @@ class TreeNode(Node):
 
 class RedBlackTreeNode(TreeNode):
     """
-    Represents node in trees.
+    Represents node in Red Black Tree.
 
     Parameters
     ==========
@@ -68,25 +68,20 @@ class RedBlackTreeNode(TreeNode):
         Optional, index of the left child node.
     right: int
         Optional, index of the right child node.
+    parent: int
+        Optional, index of the parent node.
+    color: int
+        0 for Black and 1 for Red
     """
 
-
     __slots__ = ['key', 'data', 'left', 'right', 'is_root',
-                 'height', 'parent', 'size']
+                 'height', 'parent', 'size', 'color']
 
-    def __new__(cls, key, data):
-        obj = Node.__new__(cls)
-        obj.data, obj.key = data, key
-        obj.left, obj.right, obj.parent, obj.height, obj.size = \
-            None, None, None, 0, 1
-        obj.is_root = False
+    def __new__(cls, key, data, color=0):
+        obj = TreeNode.__new__(cls, key, data)
+        obj.color = color
         return obj
 
-    def __str__(self):
-        """
-        Used for printing.
-        """
-        return str((self.left, self.key, self.data, self.right))
 
 class BinomialTreeNode(TreeNode):
     """
